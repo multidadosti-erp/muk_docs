@@ -1,104 +1,64 @@
+# Examples
+
+Here you can find some examples of how you can use the REST API.
+
+## [Python](https://github.com/muk-it/muk_docs/blob/12%2C0/muk_rest/examples/example.py)
+
+```python
 import json
 import requests
 
-from pprint import pprint
-
 from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import BackendApplicationClient
+from oauthlib.oauth2 import LegacyApplicationClient
 
-class RestAPI:
-    def __init__(self):
-        self.url = 'https://demo12.mukit.at'
-        self.client_id = 'BackendApplicationFlowDemoClientKey'
-        self.client_secret = 'BackendApplicationFlowDemoClientSecret'
-        self.client = BackendApplicationClient(client_id=self.client_id)
-        self.oauth = OAuth2Session(client=self.client)
+client_id = 'LegacyApplicationFlowDemoClientKey'
+client_secret = 'LegacyApplicationFlowDemoClientSecret'
+token_url = 'https://bot-lawps.multidadosti.com.br/api/authentication/oauth2/token'
 
-    def route(self, url):
-        if url.startswith('/'):
-            url = "%s%s" % (self.url, url)
-        return url
+username = 'admin'
+password = 'admin'
+scope = ['all']
 
-    def authenticate(self):
-        self.oauth.fetch_token(
-            token_url=self.route('/api/authentication/oauth2/token'),
-            client_id=self.client_id, client_secret=self.client_secret
-        )
+oauth = OAuth2Session(
+    client=LegacyApplicationClient(client_id=client_id)
+)
+token = oauth.fetch_token(
+    token_url=token_url, 
+    username=username, password=password,
+    client_id=client_id, client_secret=client_secret
+)
 
-    def execute(self, enpoint, type="GET", data={}):
-        if type == "POST":
-            response = self.oauth.post(self.route(enpoint), data=data)
-        elif type == "PUT":
-            response = self.oauth.put(self.route(enpoint), data=data)
-        elif type == "DELETE":
-            response = self.oauth.delete(self.route(enpoint), data=data)
-        else:
-            response = self.oauth.get(self.route(enpoint), data=data)
-        if response.status_code != 200:
-            raise Exception(pprint(response.json()))
-        else:
-            return response.json()
+print(oauth.get("https://bot-lawps.multidadosti.com.br/api/user").json())
+```
 
-# init API
-api = RestAPI()
-api.authenticate()
+## [PHP](https://github.com/muk-it/muk_docs/blob/12%2C0/muk_rest/examples/example.php)
 
-# test API
-pprint(api.execute('/api'))
-pprint(api.execute('/api/user'))
-
-# sampel query
-data = {
-    'model': "res.partner",
-    'domain': json.dumps([['parent_id.name', '=', "Azure Interior"]]),
-    'fields': json.dumps(['name', 'image_small']),
-}
-response = api.execute('/api/search_read', data=data)
-for entry in response:
-    entry['image_small'] = entry.get('image_small')[:5] + "..."
-pprint(response)
-
-# check customer
-data = {
-    'model': "res.partner",
-    'domain': json.dumps([['name', '=', "Sample Customer"]]),
-    'limit': 1
-}
-response = api.execute('/api/search', data=data)
-customer = next(iter(response), False)
-
-# create customer
-if not customer:
-    values = {
-        'name': "Sample Customer",
-    }
-    data = {
-        'model': "res.partner",
-        'values': json.dumps(values),
-    }
-    response = api.execute('/api/create', type="POST", data=data)
-    customer = next(iter(response))
-
-# create product
-values = {
-    'name': "Sample Product",
-}
-data = {
-    'model': "product.template",
-    'values': json.dumps(values),
-}
-response = api.execute('/api/create', type="POST", data=data)
-product = next(iter(response))
-
-# create order
-values = {
-    'partner_id': customer,
-    'state': 'sale',
-    'order_line': [(0, 0, {'product_id': product})],
-}
-data = {
-    'model': "sale.order",
-    'values': json.dumps(values),
-}
-response = api.execute('/api/create', type="POST", data=data)
-order = next(iter(response))
+```php
+  $provider = new \League\OAuth2\Client\Provider\GenericProvider([
+    'clientId'                => 'LegacyApplicationFlowDemoClientKey',
+    'clientSecret'            => 'LegacyApplicationFlowDemoClientSecret',
+    'redirectUri'             => 'https://app.swaggerhub.com/oauth2_redirect/',
+    'urlAuthorize'            => 'https://bot-lawps.multidadosti.com.br/api/authentication/oauth2/authorize',
+    'urlAccessToken'          => 'https://bot-lawps.multidadosti.com.br/api/authentication/oauth2/token',
+    'urlResourceOwnerDetails' => ''
+  ]);
+  
+  try {
+    $accessToken = $provider->getAccessToken('password', [
+      'username' => 'demo',
+      'password' => 'demo'      
+    ]);
+    $request = $provider->getAuthenticatedRequest(
+      'GET',
+      'https://bot-lawps.multidadosti.com.br/api/user',
+      $accessToken
+    );
+    $client = new \GuzzleHttp\Client();
+    $response = $client->send($request);
+    $rawBody = $response->getBody()->getContents();
+    
+    print_r($rawBody);
+  } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+    exit($e->getMessage());
+  }
+```
